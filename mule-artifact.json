@@ -1,0 +1,38 @@
+{
+  "configs": [
+    "inbound-config.xml",
+    "wsdl-proxy.xml",
+    "outbound-config.xml"
+  ],
+  "secureProperties": [
+    "inbound.keystore.password",
+    "inbound.keystore.keyPassword",
+    "inbound.truststore.password",
+    "outbound.keystore.password",
+    "outbound.keystore.keyPassword",
+    "outbound.truststore.password",
+    "anypoint.platform.client_secret"
+  ],
+  "redeploymentEnabled": true,
+  "name": "org.mule.examples:api-gateway-sample-wsdl-proxy:2.1.1",
+  "minMuleVersion": "4.1.0",
+  "requiredProduct": "MULE",
+  "classLoaderModelLoaderDescriptor": {
+    "id": "mule",
+    "attributes": {
+      "exportedPackages": [],
+      "exportedResources": [
+        "wsdl-proxy.xml",
+        "outbound-config.xml",
+        "config.properties",
+        "simple-service.wsdl",
+        "basicauth.properties",
+        "inbound-config.xml"
+      ]
+    }
+  },
+  "bundleDescriptorLoader": {
+    "id": "mule",
+    "attributes": {}
+  }
+}

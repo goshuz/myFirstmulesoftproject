@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:proxy="http://www.mulesoft.org/schema/mule/proxy"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
+      xmlns:soap-request-validator="http://www.mulesoft.org/schema/mule/soap-request-validator"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:compression="http://www.mulesoft.org/schema/mule/compression"
+      xmlns="http://www.mulesoft.org/schema/mule/core"
+      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+                        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+                        http://www.mulesoft.org/schema/mule/soap-request-validator http://www.mulesoft.org/schema/mule/soap-request-validator/current/mule-soap-request-validator.xsd
+                        http://www.mulesoft.org/schema/mule/compression http://www.mulesoft.org/schema/mule/compression/current/mule-compression.xsd
+                        http://www.mulesoft.org/schema/mule/proxy http://www.mulesoft.org/schema/mule/proxy/current/mule-proxy.xsd
+                        http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+
+    <configuration-properties file="config.properties"/>
+    <configuration-properties file="basicauth.properties"/>
+
+    <configuration defaultResponseTimeout="${proxy.responseTimeout}"/>
+
+    <soap-request-validator:config name="validator-config" wsdlLocation="${wsdl}" serviceName="${service.name}"
+                                   servicePort="${service.port}" schemaValidationEnabled="${validation.enable}"
+                                   requesterConfig="http-request-config" basicAuthUser="${basic.auth.user}" basicAuthPassword="${basic.auth.password}"/>
+
+    <proxy:config name="proxy-config"/>
+
+    <api-gateway:autodiscovery apiId="${api.id}" flowRef="proxy"/>
+
+    <flow name="proxy">
+        <http:listener config-ref="http-listener-config" path="${proxy.path}" allowedMethods="GET, POST">
+            <http:response statusCode="#[attributes.statusCode default 200]" reasonPhrase="#[attributes.reasonPhrases]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.proxyResponseHeaders default {"Content-Type" : "text/xml"}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[output text/plain ---  Soap::getStatusCode(vars.soapSchema, error.errorType.identifier)]">
+                <http:body>#[output text/plain --- Soap::getErrorBody(vars.soapSchema, error.errorType.identifier, error.description)]</http:body>
+                <http:headers>#[Soap::appendSoapHeaders(vars.soapSchema, vars.proxyResponseHeaders default {})]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <choice>
+            <when expression="#[attributes.method == 'POST']">
+                <flow-ref name="decompress-flow" />
+                <soap-request-validator:validate config-ref="validator-config"
+                                                 soapAction="#[attributes.headers.soapaction]"
+                                                 mimeType="#[attributes.headers.'content-type']">
+                    <soap-request-validator:request>#[vars.decompressedRequest default payload]</soap-request-validator:request>
+                </soap-request-validator:validate>
+                <proxy:request-headers headers="#[attributes.headers]" target="proxyRequestHeaders"/>
+                <soap-request-validator:service-address config-ref="validator-config" target="backendAddress" />
+                <http:request config-ref="http-request-config" method="POST" url="#[vars.backendAddress]">
+                    <http:body>#[payload]</http:body>
+                    <http:headers>#[vars.proxyRequestHeaders]</http:headers>
+                    <http:uri-params>#[attributes.uriParams]</http:uri-params>
+                    <http:query-params>#[attributes.queryParams]</http:query-params>
+                    <http:response-validator>
+                        <http:success-status-code-validator values="0..599"/>
+                    </http:response-validator>
+                </http:request>
+                <proxy:response-headers target="proxyResponseHeaders" headers="#[attributes.headers]"/>
+            </when>
+            <when expression="#[Soap::isGetWsdl(attributes.method, attributes.queryParams)]">
+                <soap-request-validator:wsdl config-ref="validator-config" />
+            </when>
+            <otherwise>
+                <raise-error description="HTTP verb was neither POST nor GET" type="ANY:METHOD_NOT_ALLOWED"/>
+            </otherwise>
+        </choice>
+        <error-handler>
+            <on-error-propagate type="ANY" logException="true">
+                <soap-request-validator:soap-schema config-ref="validator-config" target="soapSchema"/>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+
+    <sub-flow name="decompress-flow">
+        <choice>
+            <when expression="#[attributes.headers.'content-encoding' == 'gzip']">
+                <compression:decompress target="decompressedRequest">
+                    <compression:decompressor>
+                        <compression:gzip-decompressor/>
+                    </compression:decompressor>
+                </compression:decompress>
+            </when>
+        </choice>
+    </sub-flow>
+
+</mule>
