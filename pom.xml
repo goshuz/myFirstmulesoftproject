@@ -7,7 +7,7 @@
     <version>2.1.1</version>
 
     <packaging>mule-application</packaging>
-    <name>cal-soap-proxy-api-gateway</name>
+    <name>cal-soap-proxy-api-gatewayy</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

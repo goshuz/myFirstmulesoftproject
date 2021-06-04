@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:proxy="http://www.mulesoft.org/schema/mule/proxy"
+<mule xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:proxy="http://www.mulesoft.org/schema/mule/proxy"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
       xmlns:soap-request-validator="http://www.mulesoft.org/schema/mule/soap-request-validator"
       xmlns:http="http://www.mulesoft.org/schema/mule/http"
       xmlns:compression="http://www.mulesoft.org/schema/mule/compression"
-      xmlns="http://www.mulesoft.org/schema/mule/core"
-      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+      xmlns="http://www.mulesoft.org/schema/mule/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
                         http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
                         http://www.mulesoft.org/schema/mule/soap-request-validator http://www.mulesoft.org/schema/mule/soap-request-validator/current/mule-soap-request-validator.xsd
                         http://www.mulesoft.org/schema/mule/compression http://www.mulesoft.org/schema/mule/compression/current/mule-compression.xsd
@@ -45,7 +45,7 @@
                                                  mimeType="#[attributes.headers.'content-type']">
                     <soap-request-validator:request>#[vars.decompressedRequest default payload]</soap-request-validator:request>
                 </soap-request-validator:validate>
-                <proxy:request-headers headers="#[attributes.headers]" target="proxyRequestHeaders"/>
+				<proxy:request-headers headers="#[attributes.headers]" target="proxyRequestHeaders"/>
                 <soap-request-validator:service-address config-ref="validator-config" target="backendAddress" />
                 <http:request config-ref="http-request-config" method="POST" url="#[vars.backendAddress]">
                     <http:body>#[payload]</http:body>
